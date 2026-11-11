@@ -46,7 +46,7 @@
  * The loader URL carries a `?v=` version parameter (for the integration, the
  * manifest version), so the browser cache refreshes with every release.
  */
-const SLIDER_TIMER_CARD_VERSION = "1.0.0";
+const SLIDER_TIMER_CARD_VERSION = "1.0.1";
 
 /* The actual version is the ?v= parameter of the loader script URL, if any
  * (that is how it loads as a Lovelace resource); otherwise the constant above. */
@@ -640,15 +640,15 @@ class SliderTimerCard extends HTMLElement {
     const groups = this._integrationGroups();
     if (!groups.length) return null;
 
-    const nameSpecified = Object.prototype.hasOwnProperty.call(c, "name");
+    /* setConfig always fills in `name` (null by default), so only a non-empty
+     * value counts as naming a timer. A named timer that does not exist shows
+     * no timer; without a name the alphabetically first timer is used. */
+    const nameSpecified =
+      c.name !== undefined && c.name !== null && String(c.name).trim() !== "";
     if (nameSpecified) {
       const match = this._groupForName(groups, c.name);
-      if (match) return this._makeTarget(match);
-      return null;
+      return match ? this._makeTarget(match) : null;
     }
-
-    const match = this._groupForName(groups, c.name);
-    if (match) return this._makeTarget(match);
 
     groups.sort((a, b) => this._deviceName(a).localeCompare(this._deviceName(b)));
     return this._makeTarget(groups[0]);

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1 – 2026-11-11
+
+* **Fix: the card found no timer without a `name:`** – a card added from the
+  card picker (empty configuration) showed "No timer" instead of picking the
+  timer by itself. The card treated the default `name: null` as a name it had
+  to match. Now only a non-empty `name:` selects a timer; without one the card
+  uses the first timer, as documented.
+* YAML-mode dashboard resources: the line to add is now
+  `/slider_timer/slider-timer-card.js?v=1.0.1`.
+
 ## 1.0.0 – 2026-11-11
 
 **First public release – one repository, ready for the Home Assistant

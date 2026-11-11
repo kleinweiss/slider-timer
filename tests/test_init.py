@@ -65,7 +65,7 @@ async def test_setup_entities_services_resource(hass: HomeAssistant) -> None:
         assert hass.services.has_service(DOMAIN, service)
 
     urls = [r["url"] for r in _resources(hass)]
-    assert urls == [f"{CARD_URL}?v=1.0.0"]
+    assert urls == [f"{CARD_URL}?v=1.0.1"]
     assert _resources(hass)[0]["type"] == "module"
 
 
@@ -158,7 +158,7 @@ async def test_hand_added_resource_is_switched(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     urls = sorted(r["url"] for r in resources.async_items())
-    assert urls == sorted([f"{CARD_URL}?v=1.0.0", "/local/other.js"])
+    assert urls == sorted([f"{CARD_URL}?v=1.0.1", "/local/other.js"])
 
 
 async def test_static_files(hass: HomeAssistant, hass_client) -> None:

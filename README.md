@@ -61,7 +61,7 @@ versions). There is nothing to copy into `www/`.
 > change YAML resources. Add this to `lovelace: resources:` instead:
 >
 > ```yaml
-> - url: /slider_timer/slider-timer-card.js?v=1.0.0
+> - url: /slider_timer/slider-timer-card.js?v=1.0.1
 >   type: module
 > ```
 
