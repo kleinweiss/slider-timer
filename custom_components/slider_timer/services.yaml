@@ -1,0 +1,99 @@
+# Service names, descriptions and field labels live in the translation files:
+#   translations/en.json  (English, the default, also the fallback)
+#   translations/hu.json  (Hungarian)
+# This file only carries the targets and the field selectors.
+
+start:
+  target:
+    entity:
+      domain: sensor
+      integration: slider_timer
+  fields:
+    hours:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 24
+          mode: box
+    minutes:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 60
+          mode: box
+    seconds:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 60
+          mode: box
+    media_player:
+      required: false
+      selector:
+        entity:
+          domain: media_player
+    sound_file:
+      required: false
+      selector:
+        text:
+    sound_after:
+      required: false
+      selector:
+        time:
+    sound_before:
+      required: false
+      selector:
+        time:
+    actions:
+      required: false
+      selector:
+        action:
+
+set:
+  target:
+    entity:
+      domain: sensor
+      integration: slider_timer
+  fields:
+    hours:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 24
+          mode: box
+    minutes:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 60
+          mode: box
+    seconds:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 60
+          mode: box
+
+pause:
+  target:
+    entity:
+      domain: sensor
+      integration: slider_timer
+
+resume:
+  target:
+    entity:
+      domain: sensor
+      integration: slider_timer
+
+cancel:
+  target:
+    entity:
+      domain: sensor
+      integration: slider_timer

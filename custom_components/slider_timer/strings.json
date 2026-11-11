@@ -1,0 +1,155 @@
+{
+  "title": "Slider Timer",
+  "config": {
+    "step": {
+      "user": {
+        "title": "New timer",
+        "description": "Give the timer a name and set the default duration, the expiry sound and the actions to run. The name becomes the device name; each entity gets its own name from it. Leave the media player empty for no sound.",
+        "data": {
+          "name": "Name",
+          "default_hours": "Default hours",
+          "default_minutes": "Default minutes",
+          "default_seconds": "Default seconds",
+          "media_player": "Media player",
+          "sound_file": "Sound file",
+          "sound_after": "Sound and actions after",
+          "sound_before": "Sound and actions until",
+          "actions": "Actions on expiry"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Please provide a name.",
+      "name_exists": "A timer with this name already exists.",
+      "invalid_actions": "The action list is invalid: {error}"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Timer settings",
+        "description": "Renaming does not change the entity IDs. The default duration overrides the sliders only when it is changed here; a value set on the sliders (or with the set service) survives a restart. The sound and the actions only run on expiry, inside the time window.",
+        "data": {
+          "name": "Name",
+          "default_hours": "Default hours",
+          "default_minutes": "Default minutes",
+          "default_seconds": "Default seconds",
+          "media_player": "Media player",
+          "sound_file": "Sound file",
+          "sound_after": "Sound and actions after",
+          "sound_before": "Sound and actions until",
+          "actions": "Actions on expiry"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Please provide a name.",
+      "name_exists": "A timer with this name already exists.",
+      "invalid_actions": "The action list is invalid: {error}"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "remaining": {
+        "name": "Remaining"
+      }
+    },
+    "binary_sensor": {
+      "active": {
+        "name": "Active"
+      }
+    },
+    "number": {
+      "hours": {
+        "name": "Hours"
+      },
+      "minutes": {
+        "name": "Minutes"
+      },
+      "seconds": {
+        "name": "Seconds"
+      }
+    }
+  },
+  "exceptions": {
+    "no_duration": {
+      "message": "At least one of hours, minutes or seconds is required."
+    },
+    "zero_duration": {
+      "message": "The duration must be longer than zero."
+    },
+    "invalid_actions": {
+      "message": "The expiry actions are invalid: {error}"
+    }
+  },
+  "services": {
+    "start": {
+      "name": "Start",
+      "description": "Starts the countdown timer. Without a duration it uses the values of the Hours / Minutes / Seconds entities. A running timer is overwritten. The expiry sound and actions can be passed at start (the card does this); anything you leave out falls back to the integration settings. Execution happens on the server, so the card may be closed at expiry.",
+      "fields": {
+        "hours": {
+          "name": "Hours",
+          "description": "Hours part (0-24). If any of the duration fields is given, the missing ones count as zero."
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Minutes part (0-60)."
+        },
+        "seconds": {
+          "name": "Seconds",
+          "description": "Seconds part (0-60)."
+        },
+        "media_player": {
+          "name": "Media player",
+          "description": "The media player for the expiry sound. If you provide it (even empty), it decides for this run: empty means no sound, and the integration setting does not apply."
+        },
+        "sound_file": {
+          "name": "Sound file",
+          "description": "The media ID to play (e.g. /local/...). Empty uses the default file."
+        },
+        "sound_after": {
+          "name": "Sound and actions after",
+          "description": "Start of the time window. Outside the window neither the sound nor the actions run."
+        },
+        "sound_before": {
+          "name": "Sound and actions until",
+          "description": "End of the time window. If the start and the end are the same, there is no time limit."
+        },
+        "actions": {
+          "name": "Actions on expiry",
+          "description": "Actions to run on expiry, using the standard Home Assistant action syntax. Empty means no actions, only the sound."
+        }
+      }
+    },
+    "set": {
+      "name": "Set default duration",
+      "description": "Sets the default duration without starting. The same as changing the Hours / Minutes / Seconds entities. At least one value is required.",
+      "fields": {
+        "hours": {
+          "name": "Hours",
+          "description": "Hours part (0-24)."
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Minutes part (0-60)."
+        },
+        "seconds": {
+          "name": "Seconds",
+          "description": "Seconds part (0-60)."
+        }
+      }
+    },
+    "pause": {
+      "name": "Pause",
+      "description": "Pauses the running timer. Does nothing if it is not running."
+    },
+    "resume": {
+      "name": "Resume",
+      "description": "Resumes the paused timer from the remaining time."
+    },
+    "cancel": {
+      "name": "Cancel",
+      "description": "Cancels the timer and puts it into the idle state."
+    }
+  }
+}

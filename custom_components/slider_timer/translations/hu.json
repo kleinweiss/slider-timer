@@ -1,0 +1,155 @@
+{
+  "title": "Slider Timer",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Új időzítő",
+        "description": "Adj nevet az időzítőnek, és állítsd be az alapértelmezett hosszt, valamint a lejáratkori hangot és műveleteket. A névből képződik az eszköz neve és az entitások neve. Ha a média lejátszót üresen hagyod, lejáratkor nem szól hang.",
+        "data": {
+          "name": "Név",
+          "default_hours": "Alapértelmezett óra",
+          "default_minutes": "Alapértelmezett perc",
+          "default_seconds": "Alapértelmezett másodperc",
+          "media_player": "Média lejátszó",
+          "sound_file": "Hangfájl",
+          "sound_after": "Hang és művelet ettől az időponttól",
+          "sound_before": "Hang és művelet eddig az időpontig",
+          "actions": "Lejáratkori műveletek"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Adj meg egy nevet.",
+      "name_exists": "Már van ilyen nevű időzítő.",
+      "invalid_actions": "A műveletlista érvénytelen: {error}"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Időzítő beállításai",
+        "description": "Az átnevezés nem változtatja meg az entitás-azonosítókat. Az alapértelmezett hossz csak akkor írja felül a csúszkákat, ha itt módosítod; a csúszkákon (vagy a set szolgáltatással) beállított érték újraindítás után is megmarad. A hang és a műveletek csak lejáratkor futnak, az időablakon belül.",
+        "data": {
+          "name": "Név",
+          "default_hours": "Alapértelmezett óra",
+          "default_minutes": "Alapértelmezett perc",
+          "default_seconds": "Alapértelmezett másodperc",
+          "media_player": "Média lejátszó",
+          "sound_file": "Hangfájl",
+          "sound_after": "Hang és művelet ettől az időponttól",
+          "sound_before": "Hang és művelet eddig az időpontig",
+          "actions": "Lejáratkori műveletek"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Adj meg egy nevet.",
+      "name_exists": "Már van ilyen nevű időzítő.",
+      "invalid_actions": "A műveletlista érvénytelen: {error}"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "remaining": {
+        "name": "Hátralévő"
+      }
+    },
+    "binary_sensor": {
+      "active": {
+        "name": "Aktív"
+      }
+    },
+    "number": {
+      "hours": {
+        "name": "Óra"
+      },
+      "minutes": {
+        "name": "Perc"
+      },
+      "seconds": {
+        "name": "Másodperc"
+      }
+    }
+  },
+  "exceptions": {
+    "no_duration": {
+      "message": "Adj meg legalább egy értéket: órát, percet vagy másodpercet."
+    },
+    "zero_duration": {
+      "message": "Az időzítő hossza nem lehet nulla."
+    },
+    "invalid_actions": {
+      "message": "A lejáratkori műveletek érvénytelenek: {error}"
+    }
+  },
+  "services": {
+    "start": {
+      "name": "Indítás",
+      "description": "Elindítja a visszaszámláló időzítőt. Ha nem adsz meg hosszt, az Óra / Perc / Másodperc entitások értékét használja. A már futó időzítőt felülírja. A lejáratkori hangot és műveleteket indításkor átadhatod (így tesz a kártya is); amit nem adsz meg, arra az integráció beállítása érvényes. A végrehajtás a szerveren történik, ezért lejáratkor a kártya lehet zárva is.",
+      "fields": {
+        "hours": {
+          "name": "Óra",
+          "description": "Óra rész (0–24). Ha bármelyik hossz-mezőt megadod, a hiányzó mezők nullának számítanak."
+        },
+        "minutes": {
+          "name": "Perc",
+          "description": "Perc rész (0–60)."
+        },
+        "seconds": {
+          "name": "Másodperc",
+          "description": "Másodperc rész (0–60)."
+        },
+        "media_player": {
+          "name": "Média lejátszó",
+          "description": "A lejáratkori hang lejátszója. Ha megadod (akár üresen), ez a futás dönt: üresen nem szól hang, az integráció beállítása nem él."
+        },
+        "sound_file": {
+          "name": "Hangfájl",
+          "description": "A lejátszandó média azonosítója (pl. /local/…). Üresen az alapértelmezett fájl szólal meg."
+        },
+        "sound_after": {
+          "name": "Hang és művelet ettől",
+          "description": "Az időablak kezdete. Az ablakon kívül sem hang, sem művelet nem fut."
+        },
+        "sound_before": {
+          "name": "Hang és művelet eddig",
+          "description": "Az időablak vége. Ha a kezdet és a vég ugyanaz, nincs időhöz kötve."
+        },
+        "actions": {
+          "name": "Lejáratkori műveletek",
+          "description": "A lejáratkor lefutó műveletek, a Home Assistant szokásos akció-szintaxisa szerint. Üresen csak a hang szólal meg."
+        }
+      }
+    },
+    "set": {
+      "name": "Alapérték beállítása",
+      "description": "Az alapértelmezett hossz beállítása indítás nélkül. Ugyanaz, mintha az Óra / Perc / Másodperc entitást állítanád át. Legalább egy értéket meg kell adni.",
+      "fields": {
+        "hours": {
+          "name": "Óra",
+          "description": "Óra rész (0–24)."
+        },
+        "minutes": {
+          "name": "Perc",
+          "description": "Perc rész (0–60)."
+        },
+        "seconds": {
+          "name": "Másodperc",
+          "description": "Másodperc rész (0–60)."
+        }
+      }
+    },
+    "pause": {
+      "name": "Szüneteltetés",
+      "description": "Szünetelteti a futó időzítőt. Ha nem fut, nem történik semmi."
+    },
+    "resume": {
+      "name": "Folytatás",
+      "description": "Folytatja a szüneteltetett időzítőt a hátralévő időtől."
+    },
+    "cancel": {
+      "name": "Törlés",
+      "description": "Törli az időzítőt, és üres állapotba teszi."
+    }
+  }
+}

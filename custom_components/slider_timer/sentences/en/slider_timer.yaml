@@ -1,0 +1,103 @@
+# The sentences of the Slider Timer integration – English.
+#
+# The integration copies this file into the configuration directory:
+#   /config/custom_sentences/en/slider_timer.yaml
+# (only when no such file exists yet – an existing one is never overwritten).
+#
+# The intent names and the slot names (name, hours, minutes, seconds) belong to the
+# integration code; only the sentences are translated. `{name}` is a wildcard:
+# the code matches it against the configured timer name accent-insensitively
+# and partially. When a name is given, the action runs only if exactly one timer
+# matches; with no match (or several matches) the code does not pick one
+# arbitrarily: it reports an error or asks again.
+#
+# Every intent also has sentences without a name: with a single timer that timer
+# is used, and with several the code asks which one is meant.
+language: "en"
+
+intents:
+  SliderTimerStart:
+    data:
+      - sentences:
+          # "<name> timer for <length>"
+          - "(start|set) [a|the] {name} timer (for|to) {seconds} second[s]"
+          - "(start|set) [a|the] {name} timer (for|to) {minutes} minute[s]"
+          - "(start|set) [a|the] {name} timer (for|to) {hours} hour[s]"
+          - "(start|set) [a|the] {name} timer (for|to) {minutes} minute[s] {seconds} second[s]"
+          - "(start|set) [a|the] {name} timer (for|to) {hours} hour[s] {minutes} minute[s]"
+          - "(start|set) [a|the] {name} timer (for|to) {hours} hour[s] {seconds} second[s]"
+          - "(start|set) [a|the] {name} timer (for|to) {hours} hour[s] {minutes} minute[s] {seconds} second[s]"
+          # "the timer for <length>" – without a name as well (a single timer)
+          - "(start|set) [a|the] timer (for|to) {seconds} second[s]"
+          - "(start|set) [a|the] timer (for|to) {minutes} minute[s]"
+          - "(start|set) [a|the] timer (for|to) {hours} hour[s]"
+          - "(start|set) [a|the] timer (for|to) {minutes} minute[s] {seconds} second[s]"
+          - "(start|set) [a|the] timer (for|to) {hours} hour[s] {minutes} minute[s]"
+          - "(start|set) [a|the] timer (for|to) {hours} hour[s] {seconds} second[s]"
+          - "(start|set) [a|the] timer (for|to) {hours} hour[s] {minutes} minute[s] {seconds} second[s]"
+          # "timer named <name> for <length>"
+          - "(start|set) [a|the] timer named {name} (for|to) {seconds} second[s]"
+          - "(start|set) [a|the] timer named {name} (for|to) {minutes} minute[s]"
+          - "(start|set) [a|the] timer named {name} (for|to) {hours} hour[s]"
+          - "(start|set) [a|the] timer named {name} (for|to) {minutes} minute[s] {seconds} second[s]"
+          - "(start|set) [a|the] timer named {name} (for|to) {hours} hour[s] {minutes} minute[s]"
+          - "(start|set) [a|the] timer named {name} (for|to) {hours} hour[s] {seconds} second[s]"
+          - "(start|set) [a|the] timer named {name} (for|to) {hours} hour[s] {minutes} minute[s] {seconds} second[s]"
+          # "start/set the timer" – without a duration (the number entities apply)
+          - "(start|set) [a|the] {name} timer"
+          - "(start|set) [a|the] timer"
+
+  SliderTimerResume:
+    data:
+      - sentences:
+          - "resume [a|the] {name} timer"
+          - "continue [a|the] {name} timer"
+          - "resume the timer"
+
+  SliderTimerPause:
+    data:
+      - sentences:
+          - "pause [a|the] {name} timer"
+          - "(hold|suspend) [a|the] {name} timer"
+          - "(put|set) [a|the] {name} timer on hold"
+          # without a name as well (a single timer)
+          - "pause the timer"
+          - "(hold|suspend) the timer"
+          - "(put|set) the timer on hold"
+
+  SliderTimerCancel:
+    data:
+      - sentences:
+          - "(cancel|delete|clear|stop) [a|the] {name} timer"
+          # without a name as well (a single timer)
+          - "(cancel|delete|clear|stop) the timer"
+
+  SliderTimerStatus:
+    data:
+      - sentences:
+          - "how (much|long) [time] is left on [a|the] {name} timer"
+          - "how much time (is left|remains) on [a|the] {name} timer"
+          - "what (is the status|status) of [a|the] {name} timer"
+          # without a name as well (a single timer)
+          - "how (much|long) [time] is left on [a|the] timer"
+          - "how much time (is left|remains) on [a|the] timer"
+          - "what (is the status|status) of [a|the] timer"
+          # without a name (and without the word "timer")
+          - "how (much|long) [time] is left"
+          - "how much time (is left|remains)"
+
+lists:
+  name:
+    wildcard: true
+  hours:
+    range:
+      from: 1
+      to: 24
+  minutes:
+    range:
+      from: 1
+      to: 1440
+  seconds:
+    range:
+      from: 1
+      to: 3600

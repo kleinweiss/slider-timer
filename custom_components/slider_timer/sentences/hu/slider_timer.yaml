@@ -1,0 +1,110 @@
+# Az Időzítő (Slider Timer) integráció saját mondatai – magyar.
+#
+# Ezt a fájlt az integráció másolja a config alá, ide:
+#   /config/custom_sentences/hu/slider_timer.yaml
+# (ha ott még nincs ilyen nevű fájl – a meglévőt nem írja felül).
+#
+# A szándékok neve és a slotok neve (name, hours, minutes, seconds) az integráció
+# kódjához kötődnek; a mondatok nyelviek. Az `{name}` wildcard: a kód
+# ékezet-függetlenül, részlegesen egyezteti a beállított időzítő nevével.
+# Megadott névnél csak akkor hajtja végre a műveletet, ha pontosan egy időzítő
+# illeszkedik; ha nincs találat (vagy több is illeszkedik), nem választ
+# önkényesen: hibát jelez, illetve visszakérdez.
+#
+# Minden szándéknak van név nélküli mondata is: ilyenkor egy időzítő esetén azt
+# használja, több időzítőnél pedig rákérdez.
+language: "hu"
+
+intents:
+  SliderTimerStart:
+    data:
+      - sentences:
+          # "időzítőt <hossz>" – megadott névvel
+          - "(indítsd|indíts|állítsd|állíts) [el|be] (egy|a|az) {name} időzítőt {seconds} másodperc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] (egy|a|az) {name} időzítőt {minutes} perc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] (egy|a|az) {name} időzítőt {hours} ór(a|ás|ára|át|ával)"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] (egy|a|az) {name} időzítőt {minutes} perc[re|es|et|cel] {seconds} másodperc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] (egy|a|az) {name} időzítőt {hours} ór(a|ás|ára|át|ával) {minutes} perc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] (egy|a|az) {name} időzítőt {hours} ór(a|ás|ára|át|ával) {seconds} másodperc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] (egy|a|az) {name} időzítőt {hours} ór(a|ás|ára|át|ával) {minutes} perc[re|es|et|cel] {seconds} másodperc[re|es|et|cel]"
+          # "… időzítőt <hossz>" – az időzítő neve nélkül is (egy időzítő esetén)
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {seconds} másodperc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {minutes} perc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {hours} ór(a|ás|ára|át|ával)"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {minutes} perc[re|es|et|cel] {seconds} másodperc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {hours} ór(a|ás|ára|át|ával) {minutes} perc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {hours} ór(a|ás|ára|át|ával) {seconds} másodperc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {hours} ór(a|ás|ára|át|ával) {minutes} perc[re|es|et|cel] {seconds} másodperc[re|es|et|cel]"
+          # "… időzítőt" – hossz nélkül: ilyenkor az Óra/Perc/Másodperc mezők
+          # értéke (az alapérték) érvényesül. Az "állítsd|állíts" szándékosan
+          # hiányzik, hogy az „Állítsd le az időzítőt!" a leállításnál maradjon.
+          - "(indítsd|indíts) [el|be] [egy|a|az] {name} időzítőt"
+          - "(indítsd|indíts) [el|be] [egy|a|az] időzítőt"
+          # "… időzítőt <név> néven <hossz>"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {name} (néven|névre) {seconds} másodperc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {name} (néven|névre) {minutes} perc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {name} (néven|névre) {hours} ór(a|ás|ára|át|ával)"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {name} (néven|névre) {minutes} perc[re|es|et|cel] {seconds} másodperc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {name} (néven|névre) {hours} ór(a|ás|ára|át|ával) {minutes} perc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {name} (néven|névre) {hours} ór(a|ás|ára|át|ával) {seconds} másodperc[re|es|et|cel]"
+          - "(indítsd|indíts|állítsd|állíts) [el|be] [egy|a|az] időzítőt {name} (néven|névre) {hours} ór(a|ás|ára|át|ával) {minutes} perc[re|es|et|cel] {seconds} másodperc[re|es|et|cel]"
+
+  SliderTimerResume:
+    data:
+      - sentences:
+          - "folytasd [tovább] [a|az] {name} [nevű] időzítő[me]t"
+          - "folytasd [tovább] az időzítőt"
+          - "futtasd tovább [a|az] {name} [nevű] időzítő[me]t"
+
+  SliderTimerPause:
+    data:
+      - sentences:
+          - "szüneteltesd [a|az] {name} [nevű] időzítő[me]t"
+          - "állítsd szünetbe [a|az] {name} [nevű] időzítő[me]t"
+          - "állítsd meg [a|az] {name} [nevű] időzítő[me]t"
+          # név nélkül is (egy időzítő esetén)
+          - "szüneteltesd az időzítőt"
+          - "állítsd szünetbe az időzítőt"
+          - "állítsd meg az időzítőt"
+
+  SliderTimerCancel:
+    data:
+      - sentences:
+          - "töröld [a|az] {name} [nevű] időzítő[me]t"
+          - "szüntesd meg [a|az] {name} [nevű] időzítő[me]t"
+          - "állítsd le [a|az] {name} [nevű] időzítő[me]t"
+          - "{name} időzítő törlése"
+          # név nélkül is (egy időzítő esetén)
+          - "töröld az időzítőt"
+          - "szüntesd meg az időzítőt"
+          - "állítsd le az időzítőt"
+
+  SliderTimerStatus:
+    data:
+      - sentences:
+          - "mennyi van [még] hátra [a|az] {name} időzítőből"
+          - "mennyi idő van hátra [a|az] {name} időzítő[ből|be]"
+          - "[mi az ]{name} időzítő állapot[a]"
+          # név nélkül is (egy időzítő esetén)
+          - "mennyi van [még] hátra az időzítő[ből|nél]"
+          - "mennyi idő van hátra az időzítő[ből|nél]"
+          - "[mi az ]időzítő állapot[a]"
+          # név és az „időzítő" szó nélkül is
+          - "mennyi van [még] hátra"
+          - "mennyi idő van [még] hátra"
+
+lists:
+  name:
+    wildcard: true
+  hours:
+    range:
+      from: 1
+      to: 24
+  minutes:
+    range:
+      from: 1
+      to: 1440
+  seconds:
+    range:
+      from: 1
+      to: 3600
