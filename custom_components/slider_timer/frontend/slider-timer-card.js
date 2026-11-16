@@ -6,7 +6,8 @@
  * Lovelace resource (`?v=<integration version>`) by itself.
  *
  * The card drives the timer from the entities of the slider_timer integration: the
- * `*_remaining` (Hungarian installs: `*_hatralevo`) sensor provides the state and the remaining time, the matching
+ * status sensor provides the state (idle / active / paused) and the `ends_at`
+ * moment - the countdown itself is computed here, in the browser; the matching
  * Hours / Minutes / Seconds number entities provide the duration, while the
  * expiry actions are passed on start by the card's `expiry:` block to the
  * `slider_timer.start` service - so the server runs them even when the dashboard
@@ -46,7 +47,7 @@
  * The loader URL carries a `?v=` version parameter (for the integration, the
  * manifest version), so the browser cache refreshes with every release.
  */
-const SLIDER_TIMER_CARD_VERSION = "1.0.1";
+const SLIDER_TIMER_CARD_VERSION = "1.1.0";
 
 /* The actual version is the ?v= parameter of the loader script URL, if any
  * (that is how it loads as a Lovelace resource); otherwise the constant above. */
@@ -223,10 +224,12 @@ function buttonOptions(t) {
  * keys (translation_key). The latter also lets us infer the entity ID suffix
  * for older entries that have no key. */
 const INTEGRATION_PLATFORM = "slider_timer";
-const INTEGRATION_KEYS = ["remaining", "hours", "minutes", "seconds"];
-/* The translation_keys of the pre-1.0.0 betas (Hungarian). */
+const INTEGRATION_KEYS = ["status", "hours", "minutes", "seconds"];
+/* Older translation_keys: the Hungarian ones of the betas, and `remaining` of
+ * 1.0.x (the control sensor whose state changed every second). */
 const LEGACY_TRANSLATION_KEYS = {
-  hatralevo: "remaining",
+  remaining: "status",
+  hatralevo: "status",
   ora: "hours",
   perc: "minutes",
   masodperc: "seconds",
@@ -235,11 +238,15 @@ const LEGACY_TRANSLATION_KEYS = {
  * form (the entity IDs follow the language of the installation), so an entry
  * without a translation_key is still found. */
 const INTEGRATION_SUFFIXES = {
-  remaining: ["remaining", "hatralevo"],
+  status: ["status", "allapot", "remaining", "hatralevo"],
   hours: ["hours", "ora"],
   minutes: ["minutes", "perc"],
   seconds: ["seconds", "masodperc"],
 };
+
+/* The states of the control sensor (1.1.0+). In 1.0.x its state was the
+ * remaining time and the status lived in the `status` attribute. */
+const TIMER_STATES = ["idle", "active", "paused"];
 
 /* The three duration fields; the labels are language-dependent (cardFields). */
 const CARD_FIELDS = cardFields(TEXTS.en);
@@ -254,6 +261,53 @@ const STATE_ICON = {
   paused: "mdi:timer-pause-outline",
 };
 
+/* Apply a `subscribe_entities` message (the compressed state format of the HA
+ * websocket API: `a` added, `c` changed with `+`/`-` diffs, `r` removed) to a
+ * map of entity_id -> { state, attributes, last_updated }. */
+function applyEntityMessage(live, message) {
+  if (!message || typeof message !== "object") return;
+  const toIso = (seconds) =>
+    Number.isFinite(seconds) ? new Date(seconds * 1000).toISOString() : null;
+
+  for (const [entityId, compressed] of Object.entries(message.a || {})) {
+    live[entityId] = {
+      entity_id: entityId,
+      state: compressed.s,
+      attributes: Object.assign({}, compressed.a || {}),
+      last_updated: toIso(compressed.lu) || toIso(compressed.lc),
+    };
+  }
+  for (const [entityId, diff] of Object.entries(message.c || {})) {
+    const current = live[entityId];
+    if (!current) continue;
+    const next = {
+      entity_id: entityId,
+      state: current.state,
+      attributes: Object.assign({}, current.attributes),
+      last_updated: current.last_updated,
+    };
+    const plus = diff["+"] || {};
+    const minus = diff["-"] || {};
+    if ("s" in plus) next.state = plus.s;
+    if (plus.a) Object.assign(next.attributes, plus.a);
+    for (const key of minus.a || []) delete next.attributes[key];
+    const updated = toIso(plus.lu) || toIso(plus.lc);
+    if (updated) next.last_updated = updated;
+    live[entityId] = next;
+  }
+  for (const entityId of message.r || []) delete live[entityId];
+}
+
+/* The newer of the subscribed and the `hass` state of an entity. */
+function newerState(live, fromHass) {
+  if (!live) return fromHass;
+  if (!fromHass) return live;
+  const a = Date.parse(live.last_updated || "");
+  const b = Date.parse(fromHass.last_updated || "");
+  if (Number.isFinite(b) && (!Number.isFinite(a) || b > a)) return fromHass;
+  return live;
+}
+
 class SliderTimerCard extends HTMLElement {
   constructor() {
     super();
@@ -266,6 +320,10 @@ class SliderTimerCard extends HTMLElement {
     this._active = false;
     this._lang = null;
     this._fields = CARD_FIELDS;
+    this._live = {};
+    this._unsub = null;
+    this._subKey = null;
+    this._subToken = null;
   }
 
   static getStubConfig() {
@@ -312,7 +370,7 @@ class SliderTimerCard extends HTMLElement {
   }
 
   /* Refresh the static labels when the language changes (or on the first hass
-   * assignment). hass arrives every second, so we only work on a change. */
+   * assignment). hass arrives often, so we only work on a change. */
   _applyLanguage() {
     const lang = textLang(this._hass);
     if (lang === this._lang) return;
@@ -338,6 +396,70 @@ class SliderTimerCard extends HTMLElement {
   disconnectedCallback() {
     this._active = false;
     this._clearTimer();
+    this._unsubscribe();
+  }
+
+  /* ---- live state of the card's own entities ----
+   * The backend changes the state only on events (start, pause, resume,
+   * cancel, expiry). Some containers - popups in particular - do not pass
+   * fresh `hass` objects to the cards inside them, so the card would miss
+   * those events. That is why the card subscribes to its own entities
+   * (`subscribe_entities`, filtered to them) and keeps their latest state
+   * itself; `hass.states` stays the fallback. */
+  _watchedIds(target) {
+    if (!target) return [];
+    const ids = [target.sensor];
+    for (const key of Object.keys(target.numbers || {})) {
+      if (target.numbers[key]) ids.push(target.numbers[key]);
+    }
+    return ids.filter(Boolean);
+  }
+
+  _syncSubscription() {
+    if (!this._active || !this._hass || !this._hass.connection) return;
+    const ids = this._watchedIds(this._target());
+    const key = ids.join(",");
+    if (key === this._subKey) return;
+    this._unsubscribe();
+    this._subKey = key;
+    if (!ids.length) return;
+
+    const token = {};
+    this._subToken = token;
+    this._hass.connection
+      .subscribeMessage(
+        (message) => {
+          if (this._subToken !== token) return;
+          applyEntityMessage(this._live, message);
+          this._update();
+        },
+        { type: "subscribe_entities", entity_ids: ids }
+      )
+      .then((unsub) => {
+        if (this._subToken === token) this._unsub = unsub;
+        else unsub();
+      })
+      .catch(() => {
+        /* No subscription: the card keeps working from `hass` updates. */
+        if (this._subToken === token) {
+          this._subToken = null;
+          this._live = {};
+        }
+      });
+  }
+
+  _unsubscribe() {
+    this._subToken = null;
+    this._subKey = null;
+    this._live = {};
+    if (this._unsub) {
+      try {
+        this._unsub();
+      } catch (_err) {
+        /* the connection may already be gone */
+      }
+      this._unsub = null;
+    }
   }
 
   /* ---- update scheduling ----
@@ -615,9 +737,11 @@ class SliderTimerCard extends HTMLElement {
 
   /* ---- state -> display ---- */
   _entityState(entityId) {
-    return this._hass && this._hass.states[entityId]
-      ? this._hass.states[entityId]
-      : null;
+    if (!entityId) return null;
+    const fromHass =
+      this._hass && this._hass.states[entityId] ? this._hass.states[entityId] : null;
+    const live = this._live ? this._live[entityId] : null;
+    return newerState(live, fromHass);
   }
 
   /* ---- the timer's source: the slider_timer integration ---- */
@@ -634,7 +758,7 @@ class SliderTimerCard extends HTMLElement {
 
     if (c.entity) {
       const group = this._groupForEntity(c.entity);
-      return this._makeTarget(group || { remaining: c.entity });
+      return this._makeTarget(group || { status: c.entity });
     }
 
     const groups = this._integrationGroups();
@@ -698,10 +822,10 @@ class SliderTimerCard extends HTMLElement {
       const group = groups[groupKey] || (groups[groupKey] = { device_id: reg.device_id || null });
       if (!group[slot]) group[slot] = entityId;
     }
-    return Object.values(groups).filter((group) => group.remaining);
+    return Object.values(groups).filter((group) => group.status);
   }
 
-  /* The entity key (remaining / hours / minutes / seconds): first the
+  /* The entity key (status / hours / minutes / seconds): first the
    * translation_key, otherwise the entity ID suffix (the Hungarian name or the
    * English alias). */
   _entityKey(reg, entityId) {
@@ -723,11 +847,11 @@ class SliderTimerCard extends HTMLElement {
   }
 
   _makeTarget(group) {
-    if (!group || !group.remaining) return null;
+    if (!group || !group.status) return null;
     const device =
       group.device_id && this._hass.devices ? this._hass.devices[group.device_id] : null;
     return {
-      sensor: group.remaining,
+      sensor: group.status,
       numbers: {
         hours: group.hours || null,
         minutes: group.minutes || null,
@@ -853,7 +977,8 @@ class SliderTimerCard extends HTMLElement {
     if (target) {
       const st = this._entityState(target.sensor);
       const attrs = (st && st.attributes) || {};
-      state = attrs.status || "idle";
+      const raw = st ? st.state : null;
+      state = TIMER_STATES.includes(raw) ? raw : attrs.status || "idle";
       endsAt = attrs.ends_at || null;
       remainingSeconds = Number(attrs.remaining_seconds) || 0;
       if (state === "active" && endsAt) {
@@ -871,6 +996,7 @@ class SliderTimerCard extends HTMLElement {
 
   _update() {
     if (!this._built || !this._hass) return;
+    this._syncSubscription();
     this._applyLanguage();
     const t = this._t();
 
@@ -1137,12 +1263,12 @@ class SliderTimerCardEditor extends HTMLElement {
     for (const entityId of Object.keys(entities)) {
       const reg = entities[entityId];
       if (!reg || reg.platform !== INTEGRATION_PLATFORM) continue;
-      const isRemaining =
-        reg.translation_key === "remaining" ||
-        reg.translation_key === "hatralevo" ||
-        (entityId.startsWith("sensor.") &&
-          (entityId.endsWith("_hatralevo") || entityId.endsWith("_remaining")));
-      if (!isRemaining) continue;
+      if (!entityId.startsWith("sensor.")) continue;
+      const tk = reg.translation_key;
+      const isControl = tk
+        ? tk === "status" || LEGACY_TRANSLATION_KEYS[tk] === "status"
+        : INTEGRATION_SUFFIXES.status.some((suffix) => entityId.endsWith("_" + suffix));
+      if (!isControl) continue;
       options.push({
         value: entityId,
         label: `${this._friendlyName(entityId)} (${this._t().editor.integration})`,

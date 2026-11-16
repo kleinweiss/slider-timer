@@ -50,8 +50,16 @@
   },
   "entity": {
     "sensor": {
-      "remaining": {
-        "name": "Hátralévő"
+      "status": {
+        "name": "Állapot",
+        "state": {
+          "idle": "Készenlét",
+          "active": "Fut",
+          "paused": "Szüneteltetve"
+        }
+      },
+      "ends_at": {
+        "name": "Lejárat"
       }
     },
     "binary_sensor": {

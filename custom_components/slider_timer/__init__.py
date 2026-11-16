@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
+from homeassistant.components.sensor import (
+    DOMAIN as SENSOR_DOMAIN,
+    SensorDeviceClass,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
@@ -45,7 +48,7 @@ SliderTimerConfigEntry = ConfigEntry[SliderTimer]
 
 _LOGGER = logging.getLogger(__name__)
 
-# The services target the remaining-time sensor; (name, schema, method).
+# The services target the status sensor; (name, schema, method).
 SERVICES = (
     (SERVICE_START, START_SCHEMA, "async_start"),
     (SERVICE_SET, DURATION_SCHEMA, "async_set"),
@@ -76,6 +79,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             DOMAIN,
             name,
             entity_domain=SENSOR_DOMAIN,
+            # Only the status sensor (enum) is a control entity, not ends_at.
+            entity_device_classes=[SensorDeviceClass.ENUM],
             schema=schema,
             func=method,
         )
@@ -88,16 +93,18 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate an older config entry.
 
-    1.1 -> 1.2: the entity keys became English (`hatralevo` -> `remaining`,
-    `ora` -> `hours`, …). Only the unique_ids change; the entity IDs, names and
-    history stay. The old default sound path (a file copied into `www/`) is
-    switched to the bundled sound.
+    1.1 -> 1.2: the entity keys became English (`ora` -> `hours`, …), and the
+    old default sound path (a file copied into `www/`) is switched to the
+    bundled sound.
+    1.2 -> 1.3: the control sensor became event driven – `remaining` (its state
+    changed every second) is now `status` (idle / active / paused).
+    Only the unique_ids change; the entity IDs and history stay.
     """
     if entry.version > 1:
         # A newer version than this code knows: refuse instead of guessing.
         return False
 
-    if entry.version == 1 and entry.minor_version < 2:
+    if entry.version == 1 and entry.minor_version < 3:
         prefix = f"{entry.entry_id}_"
 
         @callback
@@ -118,9 +125,9 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 values[CONF_SOUND_FILE] = DEFAULT_SOUND_FILE
 
         hass.config_entries.async_update_entry(
-            entry, data=data, options=options, minor_version=2
+            entry, data=data, options=options, minor_version=3
         )
-        _LOGGER.info("Timer %s migrated to version 1.2", entry.title)
+        _LOGGER.info("Timer %s migrated to version 1.3", entry.title)
 
     return True
 

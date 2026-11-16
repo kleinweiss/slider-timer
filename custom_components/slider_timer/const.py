@@ -53,16 +53,22 @@ STATE_ACTIVE: Final = "active"
 STATE_PAUSED: Final = "paused"
 
 # --- entity keys (translation_key and the end of the unique_id) ---
-KEY_REMAINING: Final = "remaining"
+# The control entity: the state (idle / active / paused); the services target it.
+KEY_STATUS: Final = "status"
+# The moment of expiry (a timestamp sensor; empty unless running).
+KEY_ENDS_AT: Final = "ends_at"
 KEY_ACTIVE: Final = "active"
 KEY_HOURS: Final = "hours"
 KEY_MINUTES: Final = "minutes"
 KEY_SECONDS: Final = "seconds"
 
-# Up to config entry minor version 1 the keys were Hungarian. The migration in
-# __init__.py renames the unique_ids; the entity IDs stay as they are.
+# Old unique_id endings -> new ones. Up to config entry minor version 1 the keys
+# were Hungarian; in minor version 2 the control entity was `remaining` (a
+# sensor whose state changed every second). The migration in __init__.py
+# renames the unique_ids; the entity IDs stay as they are.
 LEGACY_KEYS: Final = {
-    "hatralevo": KEY_REMAINING,
+    "hatralevo": KEY_STATUS,
+    "remaining": KEY_STATUS,
     "aktiv": KEY_ACTIVE,
     "ora": KEY_HOURS,
     "perc": KEY_MINUTES,

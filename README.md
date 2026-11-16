@@ -6,7 +6,8 @@
 [![Validate](https://github.com/kleinweiss/slider-timer/actions/workflows/validate.yml/badge.svg)](https://github.com/kleinweiss/slider-timer/actions/workflows/validate.yml)
 
 A compact countdown timer for Home Assistant: a slider dashboard card, a
-remaining time that refreshes every second, an expiry sound and expiry actions
+countdown that runs in the browser (the backend is event driven, like the
+built-in `timer`: no per-second states in the recorder), an expiry sound and expiry actions
 that run on the server, and **voice control (Assist)** with English and
 Hungarian sentences.
 
@@ -51,7 +52,7 @@ Copy `custom_components/slider_timer` into your configuration directory as
    ```
 
    That is all it takes. With several timers, `name:` or `entity:` (the
-   remaining-time sensor) selects one; the visual editor lists them.
+   status sensor) selects one; the visual editor lists them.
 
 The integration serves the card at `/slider_timer/slider-timer-card.js` and adds
 it as a dashboard resource by itself (`?v=<version>`, so browsers pick up new
@@ -61,7 +62,7 @@ versions). There is nothing to copy into `www/`.
 > change YAML resources. Add this to `lovelace: resources:` instead:
 >
 > ```yaml
-> - url: /slider_timer/slider-timer-card.js?v=1.0.1
+> - url: /slider_timer/slider-timer-card.js?v=1.1.0
 >   type: module
 > ```
 
@@ -77,18 +78,33 @@ Per timer (the entity IDs follow your installation's language):
 
 | Entity | What it does |
 |---|---|
-| `sensor.<name>_remaining` | The remaining time in `H:MM:SS`. This is the control entity: the services target it. Attributes: `status` (idle / active / paused), `remaining_seconds`, `duration_seconds`, `ends_at`. When idle, the state is `unknown`. |
+| `sensor.<name>_status` | `idle` / `active` / `paused`. This is the control entity: the services target it. Attributes: `duration`, `duration_seconds`, `remaining`, `remaining_seconds` (the value at the last event: the full duration while running, the frozen remainder while paused) and `ends_at`. |
+| `sensor.<name>_ends_at` | The moment of expiry (a timestamp; empty unless running). The Home Assistant UI shows it as a live "in 4 minutes". |
 | `number.<name>_hours`, `_minutes`, `_seconds` | The default duration – the length `slider_timer.start` uses when you do not give one. |
 | `binary_sensor.<name>_active` | On while the timer is running or paused. |
 
+### Event driven – no per-second states
+
+The state of a timer changes only when something happens: start, pause,
+resume, cancel, expiry. A running timer is described by its absolute `ends_at`
+moment; the countdown is computed from it where it is shown – the card does it
+in the browser, the `ends_at` sensor is rendered live by the Home Assistant UI.
+A running timer therefore writes nothing to the recorder and sends nothing to
+the dashboards until its next event. For the remaining time in a template
+(while the timer is running), use `ends_at`:
+
+```jinja
+{{ (as_datetime(state_attr('sensor.kitchen_status', 'ends_at')) - now()).total_seconds() | int }}
+```
+
 ## Services and events
 
-Every service targets the remaining-time sensor:
+Every service targets the status sensor:
 
 ```yaml
 - action: slider_timer.start
   target:
-    entity_id: sensor.kitchen_remaining
+    entity_id: sensor.kitchen_status
   data:
     minutes: 10          # optional: hours / minutes / seconds
     media_player: media_player.kitchen   # optional, overrides the setting

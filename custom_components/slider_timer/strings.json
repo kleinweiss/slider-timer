@@ -50,8 +50,16 @@
   },
   "entity": {
     "sensor": {
-      "remaining": {
-        "name": "Remaining"
+      "status": {
+        "name": "Status",
+        "state": {
+          "idle": "Idle",
+          "active": "Running",
+          "paused": "Paused"
+        }
+      },
+      "ends_at": {
+        "name": "Ends at"
       }
     },
     "binary_sensor": {

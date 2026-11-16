@@ -1,4 +1,4 @@
-"""The sensor showing the remaining time – also the control entity of the timer.
+"""The sensors of a timer: its state (the control entity) and the moment of expiry.
 
 The services (start / pause / resume / cancel / set) target this entity, which
 is why the handler methods live on this class.
@@ -6,12 +6,12 @@ is why the handler methods live on this class.
 
 from __future__ import annotations
 
-from datetime import time as dt_time
+from datetime import datetime, time as dt_time
 from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
@@ -29,14 +29,23 @@ from .const import (
     CONF_SOUND_BEFORE,
     CONF_SOUND_FILE,
     DOMAIN,
-    KEY_REMAINING,
+    KEY_ENDS_AT,
+    KEY_STATUS,
     MAX_HOURS,
     MAX_MINUTES,
     MAX_SECONDS,
+    STATE_ACTIVE,
     STATE_IDLE,
+    STATE_PAUSED,
 )
 from .entity import SliderTimerEntity
 from .timer import SliderTimer, format_duration
+
+STATE_ICONS = {
+    STATE_IDLE: "mdi:timer-outline",
+    STATE_ACTIVE: "mdi:timer-play-outline",
+    STATE_PAUSED: "mdi:timer-pause-outline",
+}
 
 # The service fields that set the duration – all optional.
 DURATION_SCHEMA = {
@@ -106,36 +115,63 @@ async def async_setup_entry(
 ) -> None:
     """Set up the sensor platform (the services live in __init__.py)."""
     timer: SliderTimer = entry.runtime_data
-    async_add_entities([SliderTimerRemainingSensor(timer)])
+    async_add_entities([SliderTimerStatusSensor(timer), SliderTimerEndsAtSensor(timer)])
 
 
-class SliderTimerRemainingSensor(SliderTimerEntity, SensorEntity):
-    """Remaining time in H:MM:SS format.
+class SliderTimerEndsAtSensor(SliderTimerEntity, SensorEntity):
+    """The moment of expiry – empty unless the timer is running.
 
-    When idle the state is `unknown`, just like in the live YAML solution.
+    A timestamp sensor: the Home Assistant UI shows it as a live relative time
+    ("in 4 minutes") computed in the browser, so the countdown is visible
+    without the card and without any per-second state.
     """
 
-    _attr_translation_key = KEY_REMAINING
-    _attr_icon = "mdi:timer-outline"
+    _attr_translation_key = KEY_ENDS_AT
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_icon = "mdi:timer-sand"
 
     def __init__(self, timer: SliderTimer) -> None:
-        super().__init__(timer, KEY_REMAINING)
+        super().__init__(timer, KEY_ENDS_AT)
 
     @property
-    def native_value(self) -> str | None:
-        """The remaining time while running or paused; no value when idle."""
-        if self.timer.state == STATE_IDLE:
-            return None
-        return format_duration(self.timer.remaining)
+    def native_value(self) -> datetime | None:
+        return self.timer.ends_at
+
+
+class SliderTimerStatusSensor(SliderTimerEntity, SensorEntity):
+    """The state of the timer – also its control entity.
+
+    Event driven, like the built-in `timer`: the state (idle / active / paused)
+    and the attributes change only on start, pause, resume, cancel and expiry.
+    A running timer is described by `ends_at`; the countdown is computed from it
+    where it is displayed. `remaining_seconds` is the value at the last event:
+    the full duration while running, the frozen remainder while paused.
+    """
+
+    _attr_translation_key = KEY_STATUS
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = [STATE_IDLE, STATE_ACTIVE, STATE_PAUSED]
+
+    def __init__(self, timer: SliderTimer) -> None:
+        super().__init__(timer, KEY_STATUS)
+
+    @property
+    def native_value(self) -> str:
+        return self.timer.state
+
+    @property
+    def icon(self) -> str:
+        return STATE_ICONS.get(self.timer.state, "mdi:timer-outline")
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """The values in seconds and the state, for machine processing."""
+        """Machine-readable values; they change only on events."""
         return {
-            "status": self.timer.state,
-            "remaining_seconds": int(self.timer.remaining.total_seconds()),
+            "duration": format_duration(self.timer.duration),
             "duration_seconds": int(self.timer.duration.total_seconds()),
-            "ends_at": self.timer.ends_at,
+            "remaining": format_duration(self.timer.remaining_at_event),
+            "remaining_seconds": int(self.timer.remaining_at_event.total_seconds()),
+            "ends_at": self.timer.ends_at.isoformat() if self.timer.ends_at else None,
         }
 
     # -------------------------------------------------------------- services

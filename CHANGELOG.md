@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.1.0 – 2026-11-16
+
+**Event driven, like the built-in `timer`.** Up to 1.0.1 the remaining-time
+sensor changed its state every second while a timer was running, so the
+recorder stored about 3600 states per running timer per hour and every open
+dashboard received one update per second. Thanks for the report.
+
+* **No per-second tick any more.** The backend keeps the state, the duration
+  and the `ends_at` moment, and writes a state only on start, pause, resume,
+  cancel and expiry. The countdown is computed in the browser.
+* **⚠️ Breaking: the control sensor's state is now `idle` / `active` /
+  `paused`** (an enum sensor named *Status*), not the remaining time in
+  `H:MM:SS`. Attributes: `duration`, `duration_seconds`, `remaining`,
+  `remaining_seconds` (the value at the last event – the full duration while
+  running, the frozen remainder while paused) and `ends_at`. The `status`
+  attribute is gone – use the state. If an automation or template used the old
+  `H:MM:SS` state, compute from `ends_at` (see the README).
+  Existing entity IDs (`sensor.<name>_remaining` / `_hatralevo`) are kept by
+  the migration (config entry 1.2 → 1.3), so services and cards keep working.
+* **New: `sensor.<name>_ends_at`** – the moment of expiry as a timestamp; the
+  Home Assistant UI shows it as a live relative time, without the card.
+* **Fix: the card did not refresh inside popups** after pause, resume or
+  cancel (it showed the right state only when reopened). The card now
+  subscribes to its own entities (`subscribe_entities`, filtered to them), so
+  it updates wherever it is shown.
+* The services only target the status sensor, so a service aimed at the whole
+  device runs once.
+* YAML-mode dashboard resources: the line to add is now
+  `/slider_timer/slider-timer-card.js?v=1.1.0`.
+* Tests: a running timer writes no state for two minutes; pause writes exactly
+  one; migration from 1.0.x; device-targeted service runs once.
+
 ## 1.0.1 – 2026-11-11
 
 * **Fix: the card found no timer without a `name:`** – a card added from the

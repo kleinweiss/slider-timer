@@ -8,6 +8,7 @@ start:
     entity:
       domain: sensor
       integration: slider_timer
+      device_class: enum
   fields:
     hours:
       required: false
@@ -57,6 +58,7 @@ set:
     entity:
       domain: sensor
       integration: slider_timer
+      device_class: enum
   fields:
     hours:
       required: false
@@ -85,15 +87,18 @@ pause:
     entity:
       domain: sensor
       integration: slider_timer
+      device_class: enum
 
 resume:
   target:
     entity:
       domain: sensor
       integration: slider_timer
+      device_class: enum
 
 cancel:
   target:
     entity:
       domain: sensor
       integration: slider_timer
+      device_class: enum

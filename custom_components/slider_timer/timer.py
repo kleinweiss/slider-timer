@@ -3,6 +3,13 @@
 This class keeps track of the state (idle / active / paused), the remaining time
 and the moment of expiry. The entities only display what they see here, and they
 subscribe to it as change listeners.
+
+It is event driven, like the built-in `timer` integration: the listeners are
+notified only when something actually happens (start, pause, resume, cancel,
+expiry, a new default duration). There is no per-second tick – a running timer
+is fully described by its absolute `ends_at` moment, and the countdown is
+computed from that wherever it is shown (the card does it in the browser). That
+keeps the recorder and the websocket clients free of one state per second.
 """
 
 from __future__ import annotations
@@ -13,7 +20,6 @@ from typing import Any
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
-    async_track_time_interval,
 )
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
@@ -33,10 +39,6 @@ from .const import (
     STATE_PAUSED,
     STORAGE_VERSION,
 )
-
-# The remaining time refreshes every second while the timer is running.
-TICK_INTERVAL = timedelta(seconds=1)
-
 
 def format_duration(value: timedelta) -> str:
     """H:MM:SS format – the hours are not padded with zeros."""
@@ -73,7 +75,6 @@ class SliderTimer:
         self._store: Store[dict] = Store(hass, STORAGE_VERSION, store_key(entry_id))
         self._listeners: list[CALLBACK_TYPE] = []
         self._unsub_finish: CALLBACK_TYPE | None = None
-        self._unsub_tick: CALLBACK_TYPE | None = None
 
         self._state: str = STATE_IDLE
         self._duration: timedelta = timedelta()
@@ -113,6 +114,16 @@ class SliderTimer:
         """Remaining time (counted from the expiry while running)."""
         if self._state == STATE_ACTIVE and self._ends_at is not None:
             return max(timedelta(), self._ends_at - dt_util.utcnow())
+        return self._remaining
+
+    @property
+    def remaining_at_event(self) -> timedelta:
+        """The remaining time as of the last event (it does not run down).
+
+        The full duration while running, the frozen remainder while paused,
+        zero when idle – what the state attributes show, so they change only
+        on events.
+        """
         return self._remaining
 
     @property
@@ -289,13 +300,10 @@ class SliderTimer:
 
     @callback
     def _schedule(self) -> None:
-        """Set up the expiry listener and the one-second tick."""
+        """Set up the expiry listener (the only scheduled callback)."""
         assert self._ends_at is not None
         self._unsub_finish = async_track_point_in_utc_time(
             self.hass, self._async_finished, self._ends_at
-        )
-        self._unsub_tick = async_track_time_interval(
-            self.hass, self._async_tick, TICK_INTERVAL
         )
 
     @callback
@@ -304,14 +312,6 @@ class SliderTimer:
         if self._unsub_finish is not None:
             self._unsub_finish()
             self._unsub_finish = None
-        if self._unsub_tick is not None:
-            self._unsub_tick()
-            self._unsub_tick = None
-
-    @callback
-    def _async_tick(self, now: datetime) -> None:
-        """Refresh every second (the remaining time counts from the expiry)."""
-        self.async_update_listeners()
 
     @callback
     def _async_finished(self, now: datetime) -> None:
